@@ -56,27 +56,5 @@ lib/
 
 ---
 
-## 🚀 Como Executar o Projeto Localmente
-Pré-requisitos: Certifique-se de ter o Flutter SDK instalado na sua máquina (flutter doctor).
-
-### Clonar o repositório:
-git clone [https://github.com/seu-usuario/flor_de_luna.git](https://github.com/seu-usuario/flor_de_luna.git)
-cd flor_de_luna
-
-### Instalar as dependências:
-flutter pub get
-
-### Configurar o Firebase:
-1. Crie um projeto no console do Firebase.
-2. Ative o Firestore Database e o Authentication (E-mail/Senha).
-3. Rode o comando flutterfire configure no terminal da pasta do projeto para vincular os arquivos de configuração do Firebase (firebase_options.dart) ao seu app.
-
-### Executar o app:
-flutter run
-
----
-
-<p align="center">
-  Desenvolvido por: <strong>Kassandra Oliveira</strong> <br>
-  <em>Com carinho para organizar a magia do ponto cruz. ✨</em>
-</p>
+> **Desenvolvido por:** Kassandra Oliveira  
+> *Com carinho para organizar a magia do ponto cruz. ✨*
