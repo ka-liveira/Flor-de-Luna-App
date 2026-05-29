@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../models/pedido_model.dart';
 import '../services/firestore_service.dart';
 import 'cadastro_pedido_screen.dart';
-import 'editar_pedido_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF9EFE1),
       body: SafeArea(
         child: StreamBuilder<List<PedidoModel>>(
           stream: FirestoreService.streamPedidos(),
@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (_) => const CadastroPedidoScreen()),
+                builder: (_) => CadastroPedidoScreen()),
           );
           setState(() {});
         },
@@ -118,13 +118,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('🌸 Flor de Luna',
+          Text('🪷 Flor de Luna',
               style: GoogleFonts.montserrat(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text('Maio de 2026',
+          Text(DateFormat("MMMM 'de' yyyy", 'pt_BR').format(DateTime.now()),
               style: GoogleFonts.montserrat(
                   color: Colors.white70, fontSize: 13)),
           const SizedBox(height: 16),
@@ -180,8 +180,9 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         onChanged: (v) => setState(() => _busca = v),
+        style: GoogleFonts.montserrat(fontSize: 13),
         decoration: InputDecoration(
-          hintText: 'Buscar cliente ou pedido...',
+          hintText: 'Buscar cliente ou descrição...',
           hintStyle: GoogleFonts.montserrat(fontSize: 13),
           prefixIcon:
               const Icon(Icons.search, color: Color(0xFF3C6246)),
@@ -264,7 +265,9 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                    '${pedido.tema} (${pedido.textoBordar})',
+                    pedido.textoBordar.isNotEmpty
+                        ? '${pedido.tema} (${pedido.textoBordar})'
+                        : pedido.tema,
                     style: GoogleFonts.montserrat(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -276,16 +279,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (_) => [
                   const PopupMenuItem(
                       value: 'editar',
-                      child: Text('✏️ Editar Pedido')),
+                      child: Text('Editar Pedido')),
                   const PopupMenuItem(
                       value: 'concluir',
-                      child: Text('✅ Concluir Produção')),
+                      child: Text('Status de Produção')),
                   const PopupMenuItem(
                       value: 'pagamento',
-                      child: Text('💰 Registrar Pagamento')),
+                      child: Text('Registrar Pagamento')),
                   const PopupMenuItem(
                       value: 'excluir',
-                      child: Text('🗑️ Excluir Pedido')),
+                      child: Text('Excluir Pedido')),
                 ],
                 onSelected: (v) => _acaoMenu(v.toString(), pedido),
               ),
@@ -293,29 +296,46 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.person_outline,
-                  size: 14, color: Colors.grey),
+              const Icon(Icons.person_outline, size: 14, color: Colors.grey),
               const SizedBox(width: 4),
-              Text(pedido.cliente.nome,
-                  style: GoogleFonts.montserrat(
-                      fontSize: 12, color: Colors.grey)),
-              const Spacer(),
-              Icon(Icons.calendar_today_outlined,
-                  size: 14,
-                  color:
-                      pedido.entregaProxima ? Colors.red : Colors.grey),
-              const SizedBox(width: 4),
-              Text(
-                '${formatData.format(pedido.dataEntrega)} · ${pedido.diasParaEntrega >= 0 ? "Faltam ${pedido.diasParaEntrega}d" : "Atrasado!"}',
-                style: GoogleFonts.montserrat(
-                    fontSize: 12,
-                    color: pedido.entregaProxima
-                        ? Colors.red
-                        : Colors.grey,
-                    fontWeight: pedido.entregaProxima
-                        ? FontWeight.bold
-                        : FontWeight.normal),
+              Expanded(
+                child: Text(pedido.cliente.nome,
+                    style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
+              ),
+              // CORREÇÃO VISUAL: Estrutura em Column para exibir uma informação embaixo da outra
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.calendar_today_outlined,
+                          size: 13,
+                          color: pedido.entregaProxima ? Colors.red : Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Entrega: ${formatData.format(pedido.dataEntrega)}',
+                        style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            color: pedido.entregaProxima ? Colors.red : Colors.grey,
+                            fontWeight: pedido.entregaProxima ? FontWeight.bold : FontWeight.normal),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    pedido.diasParaEntrega >= 0 
+                        ? "Faltam ${pedido.diasParaEntrega} dias" 
+                        : "Atrasado!",
+                    style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        color: pedido.entregaProxima ? Colors.red : Colors.grey.shade600,
+                        fontWeight: pedido.entregaProxima ? FontWeight.bold : FontWeight.normal),
+                  ),
+                ],
               ),
             ],
           ),
@@ -334,10 +354,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _tagStatus(String status, Color cor) {
     final labels = {
-      'NA_FILA': '⚪ Na Fila',
-      'EM_PRODUCAO': '🟡 Em Produção',
-      'CONCLUIDO': '🟢 Concluído',
-      'ENTREGUE': '✅ Entregue',
+      'NA_FILA': 'Na Fila',
+      'EM_PRODUCAO': 'Em Produção',
+      'CONCLUIDO': 'Concluído',
+      'ENTREGUE': 'Entregue',
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -357,15 +377,15 @@ class _HomeScreenState extends State<HomeScreen> {
     String label;
     switch (pedido.statusPagamento) {
       case 'QUITADO':
-        label = '💚 Pago';
+        label = 'Pago';
         break;
       case 'PAGO_PARCIAL':
         final pct =
             ((pedido.valorPago / pedido.valorCobrado) * 100).round();
-        label = '🔵 Pago $pct%';
+        label = 'Pago $pct%';
         break;
       default:
-        label = '🔴 Pendente';
+        label = 'Pendente';
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -375,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Text(
         'R\$ ${pedido.valorCobrado.toStringAsFixed(0)} · $label',
         style: GoogleFonts.montserrat(
-            fontSize: 11, fontWeight: FontWeight.w600, color: cor),
+          fontSize: 11, fontWeight: FontWeight.w600, color: cor),
       ),
     );
   }
@@ -437,103 +457,105 @@ class _HomeScreenState extends State<HomeScreen> {
         await Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (_) => EditarPedidoScreen(pedido: pedido)),
+            builder: (_) => CadastroPedidoScreen(pedido: pedido),
+          ),
         );
+        setState(() {});
         break;
     }
   }
 
   void _modalMudarStatus(PedidoModel pedido) {
     final statusOpcoes = [
-      ('NA_FILA', '⚪ Na Fila'),
-      ('EM_PRODUCAO', '🟡 Em Produção'),
-      ('CONCLUIDO', '🟢 Concluído'),
-      ('ENTREGUE', '✅ Entregue'),
+      ('NA_FILA', 'Na Fila'),
+      ('EM_PRODUCAO', 'Em Produção'),
+      ('CONCLUIDO', 'Concluído'),
+      ('ENTREGUE', 'Entregue'),
     ];
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      backgroundColor: const Color(0xFFF9EFE1),
-      shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Mudar Status de Produção',
-                style: GoogleFonts.montserrat(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF3C6246))),
-            Text(pedido.tema,
-                style: GoogleFonts.montserrat(
-                    fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 16),
-            ...statusOpcoes.map((s) {
-              final ativo = pedido.statusProducao == s.$1;
-              return GestureDetector(
-                onTap: () async {
-                  final atualizado = PedidoModel(
-                    id: pedido.id,
-                    cliente: pedido.cliente,
-                    dataPedido: pedido.dataPedido,
-                    dataEntrega: pedido.dataEntrega,
-                    tema: pedido.tema,
-                    textoBordar: pedido.textoBordar,
-                    tecido: pedido.tecido,
-                    larguraPontos: pedido.larguraPontos,
-                    alturaPontos: pedido.alturaPontos,
-                    linhas: pedido.linhas,
-                    valorCobrado: pedido.valorCobrado,
-                    valorPago: pedido.valorPago,
-                    statusProducao: s.$1,
-                    statusPagamento: pedido.statusPagamento,
-                    observacoes: pedido.observacoes,
-                    urlImagem: pedido.urlImagem,
-                  );
-                  await FirestoreService.salvarPedido(atualizado);
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: ativo
-                        ? const Color(0xFF3C6246).withOpacity(0.1)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFF9EFE1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Mudar Status de Produção',
+            style: GoogleFonts.montserrat(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF3C6246))),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(pedido.tema,
+                  style: GoogleFonts.montserrat(
+                      fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 16),
+              ...statusOpcoes.map((s) {
+                final ativo = pedido.statusProducao == s.$1;
+                return GestureDetector(
+                  onTap: () async {
+                    final atualizado = PedidoModel(
+                      id: pedido.id,
+                      cliente: pedido.cliente,
+                      dataPedido: pedido.dataPedido,
+                      dataEntrega: pedido.dataEntrega,
+                      tema: pedido.tema,
+                      textoBordar: pedido.textoBordar,
+                      tecido: pedido.tecido,
+                      larguraPontos: pedido.larguraPontos,
+                      alturaPontos: pedido.alturaPontos,
+                      linhas: pedido.linhas,
+                      valorCobrado: pedido.valorCobrado,
+                      valorPago: pedido.valorPago,
+                      statusProducao: s.$1,
+                      statusPagamento: pedido.statusPagamento,
+                      observacoes: pedido.observacoes,
+                      urlImagem: pedido.urlImagem,
+                    );
+                    await FirestoreService.salvarPedido(atualizado);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
                       color: ativo
-                          ? const Color(0xFF3C6246)
-                          : Colors.grey.shade200,
+                          ? const Color(0xFF3C6246).withOpacity(0.1)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: ativo
+                            ? const Color(0xFF3C6246)
+                            : Colors.grey.shade200,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(s.$2,
+                              style: GoogleFonts.montserrat(
+                                  fontSize: 13,
+                                  fontWeight: ativo
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: ativo
+                                      ? const Color(0xFF3C6246)
+                                      : const Color(0xFF1C2321))),
+                        ),
+                        if (ativo)
+                          const Icon(Icons.check_circle,
+                              color: Color(0xFF3C6246), size: 18),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(s.$2,
-                            style: GoogleFonts.montserrat(
-                                fontSize: 13,
-                                fontWeight: ativo
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: ativo
-                                    ? const Color(0xFF3C6246)
-                                    : const Color(0xFF1C2321))),
-                      ),
-                      if (ativo)
-                        const Icon(Icons.check_circle,
-                            color: Color(0xFF3C6246), size: 18),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );
@@ -542,28 +564,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void _modalRegistrarPagamento(PedidoModel pedido) {
     final valorCtrl = TextEditingController(
         text: pedido.valorRestante.toStringAsFixed(2));
-    showModalBottomSheet(
+        
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFFF9EFE1),
-      shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-            left: 24,
-            right: 24,
-            top: 24),
-        child: Column(
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFF9EFE1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Registrar Pagamento',
+            style: GoogleFonts.montserrat(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF3C6246))),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Registrar Pagamento',
-                style: GoogleFonts.montserrat(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF3C6246))),
-            const SizedBox(height: 4),
             Text(
               'Saldo devedor: R\$ ${pedido.valorRestante.toStringAsFixed(2)}',
               style: GoogleFonts.montserrat(
@@ -574,7 +589,8 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: valorCtrl,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: GoogleFonts.montserrat(fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Valor recebido (R\$)',
                 hintStyle: GoogleFonts.montserrat(fontSize: 13),
@@ -589,89 +605,66 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderSide: BorderSide.none),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side:
-                          const BorderSide(color: Color(0xFF3C6246)),
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancelar',
-                        style: GoogleFonts.montserrat(
-                            color: const Color(0xFF3C6246))),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF39AA5),
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () async {
-                      final valorRecebido =
-                          double.tryParse(valorCtrl.text) ?? 0;
-                      final novoTotal =
-                          pedido.valorPago + valorRecebido;
-                      final novoStatus =
-                          novoTotal >= pedido.valorCobrado
-                              ? 'QUITADO'
-                              : 'PAGO_PARCIAL';
-                      final atualizado = PedidoModel(
-                        id: pedido.id,
-                        cliente: pedido.cliente,
-                        dataPedido: pedido.dataPedido,
-                        dataEntrega: pedido.dataEntrega,
-                        tema: pedido.tema,
-                        textoBordar: pedido.textoBordar,
-                        tecido: pedido.tecido,
-                        larguraPontos: pedido.larguraPontos,
-                        alturaPontos: pedido.alturaPontos,
-                        linhas: pedido.linhas,
-                        valorCobrado: pedido.valorCobrado,
-                        valorPago: novoTotal,
-                        statusProducao: pedido.statusProducao,
-                        statusPagamento: novoStatus,
-                        observacoes: pedido.observacoes,
-                        urlImagem: pedido.urlImagem,
-                      );
-                      await FirestoreService.salvarPedido(atualizado);
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              novoStatus == 'QUITADO'
-                                  ? '🎉 Pedido quitado!'
-                                  : '💰 Pagamento registrado!',
-                              style: GoogleFonts.montserrat(),
-                            ),
-                            backgroundColor: const Color(0xFF3C6246),
-                          ),
-                        );
-                      }
-                    },
-                    child: Text('Confirmar',
-                        style: GoogleFonts.montserrat(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar',
+                style: GoogleFonts.montserrat(
+                    color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF39AA5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              final valorRecebidoText = valorCtrl.text.replaceAll(',', '.');
+              final valorRecebido = double.tryParse(valorRecebidoText) ?? 0;
+              final novoTotal = pedido.valorPago + valorRecebido;
+              final novoStatus = novoTotal >= pedido.valorCobrado
+                  ? 'QUITADO'
+                  : 'PAGO_PARCIAL';
+              final atualizado = PedidoModel(
+                id: pedido.id,
+                cliente: pedido.cliente,
+                dataPedido: pedido.dataPedido,
+                dataEntrega: pedido.dataEntrega,
+                tema: pedido.tema,
+                textoBordar: pedido.textoBordar,
+                tecido: pedido.tecido,
+                larguraPontos: pedido.larguraPontos,
+                alturaPontos: pedido.alturaPontos,
+                linhas: pedido.linhas,
+                valorCobrado: pedido.valorCobrado,
+                valorPago: novoTotal,
+                statusProducao: pedido.statusProducao,
+                statusPagamento: novoStatus,
+                observacoes: pedido.observacoes,
+                urlImagem: pedido.urlImagem,
+              );
+              await FirestoreService.salvarPedido(atualizado);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      novoStatus == 'QUITADO'
+                          ? '🎉 Pedido quitado!'
+                          : '💰 Pagamento registrado!',
+                      style: GoogleFonts.montserrat(),
+                    ),
+                    backgroundColor: const Color(0xFF3C6246),
+                  ),
+                );
+              }
+            },
+            child: Text('Confirmar',
+                style: GoogleFonts.montserrat(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

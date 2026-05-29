@@ -12,6 +12,7 @@ class EditarPedidoScreen extends StatefulWidget {
   @override
   State<EditarPedidoScreen> createState() => _EditarPedidoScreenState();
 }
+
 class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
   late TextEditingController _temaController;
   late TextEditingController _textoController;
@@ -20,19 +21,16 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
   late TextEditingController _valorController;
   late TextEditingController _entradaController;
   late TextEditingController _observacoesController;
+  late TextEditingController _tecidoObservacaoController;
 
-  late ClienteModel? _clienteSelecionado;
-  late String _tecidoSelecionado;
+  ClienteModel? _clienteSelecionado;
   late DateTime? _dataEntrega;
   late String _statusProducao;
   late List<LinhaResumida> _linhasSelecionadas;
 
-  // Novas variáveis para dados do Firestore
   List<ClienteModel> _clientes = [];
-  dynamic _estoqueLinhas = []; // Substitua 'dynamic' pelo seu tipo real, ex: List<LinhaModel>
+  List<dynamic> _estoqueLinhas = []; 
   bool _carregando = true;
-
-  final List<String> _tecidos = ['Etamine', 'Crivo', 'Aida 14', 'Aida 18'];
 
   static const double _pontosPorCm = 5.0;
   static const double _margemTecido = 10.0;
@@ -51,13 +49,12 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     _valorController = TextEditingController(text: p.valorCobrado.toStringAsFixed(2));
     _entradaController = TextEditingController(text: p.valorPago.toStringAsFixed(2));
     _observacoesController = TextEditingController(text: p.observacoes);
+    _tecidoObservacaoController = TextEditingController(text: p.tecido); // Carrega o texto salvo anteriormente
     _clienteSelecionado = p.cliente;
-    _tecidoSelecionado = p.tecido;
     _dataEntrega = p.dataEntrega;
     _statusProducao = p.statusProducao;
     _linhasSelecionadas = List.from(p.linhas);
 
-    // Inicia a busca dos dados reais do banco
     _carregarDadosDoBanco();
   }
 
@@ -71,10 +68,9 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
       if (mounted) {
         setState(() {
           _clientes = resultados[0] as List<ClienteModel>;
-          _estoqueLinhas = resultados[1];
+          _estoqueLinhas = resultados[1] as List<dynamic>;
           
-          // Importante: garante que a referência do cliente selecionado bate com um objeto dentro da lista real
-          if (_clienteSelecionado != null) {
+          if (_clienteSelecionado != null && _clientes.isNotEmpty) {
             _clienteSelecionado = _clientes.firstWhere(
               (c) => c.id == widget.pedido.cliente.id,
               orElse: () => widget.pedido.cliente,
@@ -103,18 +99,13 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     _valorController.dispose();
     _entradaController.dispose();
     _observacoesController.dispose();
+    _tecidoObservacaoController.dispose();
     super.dispose();
   }
 
   double get _larguraCm => (double.tryParse(_larguraController.text) ?? 0) / _pontosPorCm;
   double get _alturaCm => (double.tryParse(_alturaController.text) ?? 0) / _pontosPorCm;
-
-  double get _totalPontos {
-    final l = double.tryParse(_larguraController.text) ?? 0;
-    final a = double.tryParse(_alturaController.text) ?? 0;
-    return l * a;
-  }
-
+  double get _totalPontos => (double.tryParse(_larguraController.text) ?? 0) * (double.tryParse(_alturaController.text) ?? 0);
   double get _horasEstimadas => _totalPontos / _pontosPorHora;
   double get _precoSugerido => (_horasEstimadas * _valorHora) + _materialFixo;
   bool get _temCalculo => _larguraController.text.isNotEmpty && _alturaController.text.isNotEmpty;
@@ -131,8 +122,7 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('Editar Pedido',
-            style: GoogleFonts.montserrat(
-                fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF3C6246))),
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF3C6246))),
       ),
       body: _carregando
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF3C6246)))
@@ -158,7 +148,6 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     );
   }
 
-  // ─── BLOCO STATUS ───────────────────────────────────────────────
   Widget _blocoStatus() {
     final statusOpcoes = [
       ('NA_FILA', 'Na Fila'),
@@ -180,15 +169,10 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
               decoration: BoxDecoration(
                 color: ativo ? const Color(0xFF3C6246) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: ativo ? const Color(0xFF3C6246) : Colors.grey.shade300,
-                ),
+                border: Border.all(color: ativo ? const Color(0xFF3C6246) : Colors.grey.shade300),
               ),
               child: Text(s.$2,
-                  style: GoogleFonts.montserrat(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: ativo ? Colors.white : const Color(0xFF1C2321))),
+                  style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: ativo ? Colors.white : const Color(0xFF1C2321))),
             ),
           );
         }).toList(),
@@ -196,7 +180,6 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     );
   }
 
-  // ─── BLOCO 1: CLIENTE ───────────────────────────────────────────
   Widget _bloco1Cliente() {
     return _blocoContainer(
       titulo: 'Cliente e Entrega',
@@ -205,6 +188,7 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
           DropdownButtonFormField<ClienteModel>(
             value: _clienteSelecionado,
             decoration: _inputDecoration('Selecionar cliente'),
+            hint: Text('Selecionar cliente', style: GoogleFonts.montserrat(fontSize: 13)),
             items: _clientes.map((c) {
               return DropdownMenuItem(
                 value: c,
@@ -228,12 +212,8 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
                   const Icon(Icons.calendar_today_outlined, color: Color(0xFF3C6246), size: 18),
                   const SizedBox(width: 10),
                   Text(
-                    _dataEntrega == null
-                        ? 'Data de Entrega'
-                        : DateFormat('dd/MM/yyyy').format(_dataEntrega!),
-                    style: GoogleFonts.montserrat(
-                        fontSize: 13,
-                        color: _dataEntrega == null ? Colors.grey : const Color(0xFF1C2321)),
+                    _dataEntrega == null ? 'Data de Entrega' : DateFormat('dd/MM/yyyy').format(_dataEntrega!),
+                    style: GoogleFonts.montserrat(fontSize: 13, color: _dataEntrega == null ? Colors.grey : const Color(0xFF1C2321)),
                   ),
                 ],
               ),
@@ -244,7 +224,6 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     );
   }
 
-  // ─── BLOCO 2: BORDADO ───────────────────────────────────────────
   Widget _bloco2Bordado() {
     return _blocoContainer(
       titulo: 'Detalhes do Bordado',
@@ -252,21 +231,15 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
         children: [
           _campo(_temaController, 'Tema / Descrição', Icons.auto_stories_outlined),
           const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            value: _tecidoSelecionado,
-            decoration: _inputDecoration('Tecido'),
-            items: _tecidos.map((t) {
-              return DropdownMenuItem(
-                  value: t, child: Text(t, style: GoogleFonts.montserrat(fontSize: 13)));
-            }).toList(),
-            onChanged: (v) => setState(() => _tecidoSelecionado = v!),
-          ),
+          _campo(_textoController, 'Texto a ser bordado', Icons.text_fields_outlined),
+          const SizedBox(height: 10),
+          // MODIFICAÇÃO: Select de tecidos substituído por campo de texto livre idêntico ao de cadastro
+          _campo(_tecidoObservacaoController, 'Observação sobre o Tecido (Ex: Etamine Branca)', Icons.layers_outlined),
         ],
       ),
     );
   }
 
-  // ─── BLOCO 3: CALCULADORA ───────────────────────────────────────
   Widget _bloco3Calculadora() {
     return _blocoContainer(
       titulo: 'Medidas e Cálculo',
@@ -276,16 +249,14 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
           Row(
             children: [
               Expanded(
-                child: _campo(_larguraController, 'Largura (pts)', Icons.width_normal_outlined,
-                    teclado: TextInputType.number, aoMudar: () => setState(() {})),
+                child: _campo(_larguraController, 'Largura (pts)', Icons.width_normal_outlined, teclado: TextInputType.number, aoMudar: () => setState(() {})),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Text('✕', style: TextStyle(fontSize: 18, color: Color(0xFF3C6246))),
               ),
               Expanded(
-                child: _campo(_alturaController, 'Altura (pts)', Icons.height_outlined,
-                    teclado: TextInputType.number, aoMudar: () => setState(() {})),
+                child: _campo(_alturaController, 'Altura (pts)', Icons.height_outlined, teclado: TextInputType.number, aoMudar: () => setState(() {})),
               ),
             ],
           ),
@@ -302,25 +273,17 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('✨ Resultado',
-                      style: GoogleFonts.montserrat(
-                          fontWeight: FontWeight.bold, fontSize: 12, color: const Color(0xFF3C6246))),
+                  Text('✨ Resultado', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 12, color: const Color(0xFF3C6246))),
                   const SizedBox(height: 8),
-                  _linhaCalculo('Tamanho:',
-                      '${_larguraCm.toStringAsFixed(1)} × ${_alturaCm.toStringAsFixed(1)} cm'),
-                  _linhaCalculo('Corte sugerido:',
-                      '${(_larguraCm + _margemTecido).toStringAsFixed(1)} × ${(_alturaCm + _margemTecido).toStringAsFixed(1)} cm'),
+                  _linhaCalculo('Tamanho:', '${_larguraCm.toStringAsFixed(1)} × ${_alturaCm.toStringAsFixed(1)} cm'),
+                  _linhaCalculo('Corte sugerido:', '${(_larguraCm + _margemTecido).toStringAsFixed(1)} × ${(_alturaCm + _margemTecido).toStringAsFixed(1)} cm'),
                   _linhaCalculo('Tempo estimado:', '${_horasEstimadas.toStringAsFixed(1)} horas'),
                   const Divider(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('💰 Preço sugerido:',
-                          style: GoogleFonts.montserrat(
-                              fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF3C6246))),
-                      Text('R\$ ${_precoSugerido.toStringAsFixed(2)}',
-                          style: GoogleFonts.montserrat(
-                              fontWeight: FontWeight.bold, fontSize: 15, color: const Color(0xFF3C6246))),
+                      Text('💰 Preço sugerido:', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF3C6246))),
+                      Text('R\$ ${_precoSugerido.toStringAsFixed(2)}', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 15, color: const Color(0xFF3C6246))),
                     ],
                   ),
                 ],
@@ -332,11 +295,11 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     );
   }
 
-  // ─── BLOCO 4: FINANCEIRO ────────────────────────────────────────
   Widget _bloco4Financeiro() {
     return _blocoContainer(
       titulo: 'Materiais e Pagamento',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
             onTap: _modalAdicionarLinhas,
@@ -349,15 +312,12 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
               ),
               child: Row(
                 children: [
+                  const Icon(Icons.colorize_outlined, color: Color(0xFF3C6246), size: 18),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      _linhasSelecionadas.isEmpty
-                          ? 'Adicionar Linhas do Projeto'
-                          : '${_linhasSelecionadas.length} linha(s) selecionada(s)',
-                      style: GoogleFonts.montserrat(
-                          fontSize: 13,
-                          color: _linhasSelecionadas.isEmpty ? Colors.grey : const Color(0xFF1C2321)),
+                      _linhasSelecionadas.isEmpty ? 'Adicionar Linhas do Projeto' : '${_linhasSelecionadas.length} linha(s) selecionada(s)',
+                      style: GoogleFonts.montserrat(fontSize: 13, color: _linhasSelecionadas.isEmpty ? Colors.grey : const Color(0xFF1C2321)),
                     ),
                   ),
                   const Icon(Icons.chevron_right, color: Colors.grey),
@@ -381,25 +341,21 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
             ),
           ],
           const SizedBox(height: 10),
-          _campo(_valorController, 'Valor Cobrado (R\$)', Icons.attach_money,
-              teclado: TextInputType.number),
+          _campo(_valorController, 'Valor Cobrado (R\$)', Icons.attach_money, teclado: const TextInputType.numberWithOptions(decimal: true)),
           const SizedBox(height: 10),
-          _campo(_entradaController, 'Valor Já Pago (R\$)', Icons.payments_outlined,
-              teclado: TextInputType.number),
+          _campo(_entradaController, 'Valor Já Pago (R\$)', Icons.payments_outlined, teclado: const TextInputType.numberWithOptions(decimal: true)),
           const SizedBox(height: 10),
           TextField(
             controller: _observacoesController,
             maxLines: 3,
+            style: GoogleFonts.montserrat(fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Observações gerais...',
               hintStyle: GoogleFonts.montserrat(fontSize: 13),
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),
           ),
         ],
@@ -407,7 +363,6 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     );
   }
 
-  // ─── BOTÃO SALVAR ───────────────────────────────────────────────
   Widget _botaoSalvar() {
     return SizedBox(
       width: double.infinity,
@@ -418,14 +373,11 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         onPressed: _salvarEdicao,
-        child: Text('Salvar Alterações',
-            style: GoogleFonts.montserrat(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        child: Text('Salvar Alterações', style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
       ),
     );
   }
 
-  // ─── HELPERS ────────────────────────────────────────────────────
   Widget _blocoContainer({required String titulo, required Widget child}) {
     return Container(
       width: double.infinity,
@@ -433,16 +385,12 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFFDF9),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(titulo,
-              style: GoogleFonts.montserrat(
-                  fontWeight: FontWeight.bold, fontSize: 14, color: const Color(0xFF3C6246))),
+          Text(titulo, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 14, color: const Color(0xFF3C6246))),
           const SizedBox(height: 14),
           child,
         ],
@@ -450,16 +398,11 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     );
   }
 
-  Widget _campo(
-    TextEditingController controller,
-    String hint,
-    IconData icone, {
-    TextInputType teclado = TextInputType.text,
-    VoidCallback? aoMudar,
-  }) {
+  Widget _campo(TextEditingController controller, String hint, IconData icone, {TextInputType teclado = TextInputType.text, VoidCallback? aoMudar}) {
     return TextField(
       controller: controller,
       keyboardType: teclado,
+      style: GoogleFonts.montserrat(fontSize: 13),
       onChanged: aoMudar != null ? (_) => aoMudar() : null,
       decoration: InputDecoration(
         hintText: hint,
@@ -491,15 +434,12 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey.shade700)),
-          Text(valor,
-              style: GoogleFonts.montserrat(
-                  fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF1C2321))),
+          Text(valor, style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF1C2321))),
         ],
       ),
     );
   }
 
-  // ─── AÇÕES ──────────────────────────────────────────────────────
   Future<void> _selecionarData() async {
     final data = await showDatePicker(
       context: context,
@@ -509,10 +449,7 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF3C6246),
-              onPrimary: Colors.white,
-            ),
+            colorScheme: const ColorScheme.light(primary: Color(0xFF3C6246), onPrimary: Colors.white),
           ),
           child: child!,
         );
@@ -521,7 +458,6 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     if (data != null) setState(() => _dataEntrega = data);
   }
 
-  // Atualizado para usar o estoque vindo do Firestore (_estoqueLinhas)
   void _modalAdicionarLinhas() {
     showModalBottomSheet(
       context: context,
@@ -535,9 +471,7 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                child: Text('Selecionar Linhas',
-                    style: GoogleFonts.montserrat(
-                        fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF3C6246))),
+                child: Text('Selecionar Linhas', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF3C6246))),
               ),
               Expanded(
                 child: ListView.builder(
@@ -545,25 +479,18 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
                   itemCount: _estoqueLinhas.length,
                   itemBuilder: (_, i) {
                     final l = _estoqueLinhas[i];
-                    final selecionada = _linhasSelecionadas.any(
-                        (s) => s.codigo == l.codigo && s.marca == l.marca);
+                    final selecionada = _linhasSelecionadas.any((s) => s.codigo == l.codigo && s.marca == l.marca);
                     return CheckboxListTile(
                       value: selecionada,
                       activeColor: const Color(0xFF3C6246),
-                      title: Text('${l.marca} — ${l.codigo ?? l.nomeCor}',
-                          style: GoogleFonts.montserrat(fontSize: 13)),
+                      title: Text('${l.marca} — ${l.codigo ?? l.nomeCor}', style: GoogleFonts.montserrat(fontSize: 13)),
                       onChanged: (v) {
                         setModalState(() {
                           setState(() {
                             if (v == true) {
-                              _linhasSelecionadas.add(LinhaResumida(
-                                marca: l.marca,
-                                codigo: l.codigo ?? '',
-                                nomeCor: l.nomeCor,
-                              ));
+                              _linhasSelecionadas.add(LinhaResumida(marca: l.marca, codigo: l.codigo ?? '', nomeCor: l.nomeCor ?? ''));
                             } else {
-                              _linhasSelecionadas.removeWhere((s) =>
-                                  s.codigo == l.codigo && s.marca == l.marca);
+                              _linhasSelecionadas.removeWhere((s) => s.codigo == l.codigo && s.marca == l.marca);
                             }
                           });
                         });
@@ -583,8 +510,7 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Confirmar Seleção',
-                        style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Text('Confirmar Seleção', style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -598,25 +524,18 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
   Future<void> _salvarEdicao() async {
     if (_clienteSelecionado == null || _dataEntrega == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Preencha o cliente e a data de entrega!', style: GoogleFonts.montserrat()),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Preencha o cliente e a data de entrega!', style: GoogleFonts.montserrat()), backgroundColor: Colors.red),
       );
       return;
     }
 
-    final valorCobrado = double.tryParse(_valorController.text) ?? widget.pedido.valorCobrado;
-    final valorPago = double.tryParse(_entradaController.text) ?? widget.pedido.valorPago;
+    final valorCobradoTexto = _valorController.text.replaceAll(',', '.');
+    final valorPagoTexto = _entradaController.text.replaceAll(',', '.');
 
-    String novoStatusPagamento;
-    if (valorPago <= 0) {
-      novoStatusPagamento = 'PENDENTE';
-    } else if (valorPago >= valorCobrado) {
-      novoStatusPagamento = 'QUITADO';
-    } else {
-      novoStatusPagamento = 'PAGO_PARCIAL';
-    }
+    final valorCobrado = double.tryParse(valorCobradoTexto) ?? widget.pedido.valorCobrado;
+    final valorPago = double.tryParse(valorPagoTexto) ?? widget.pedido.valorPago;
+
+    String novoStatusPagamento = valorPago <= 0 ? 'PENDENTE' : (valorPago >= valorCobrado ? 'QUITADO' : 'PAGO_PARCIAL');
 
     final pedidoAtualizado = PedidoModel(
       id: widget.pedido.id,
@@ -625,7 +544,7 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
       dataEntrega: _dataEntrega!,
       tema: _temaController.text.isEmpty ? 'Sem tema' : _temaController.text,
       textoBordar: _textoController.text,
-      tecido: _tecidoSelecionado,
+      tecido: _tecidoObservacaoController.text, // Persistindo a string editada livremente
       larguraPontos: int.tryParse(_larguraController.text) ?? 0,
       alturaPontos: int.tryParse(_alturaController.text) ?? 0,
       linhas: _linhasSelecionadas,
@@ -642,10 +561,7 @@ class _EditarPedidoScreenState extends State<EditarPedidoScreen> {
     if (context.mounted) {
       Navigator.pop(context, true);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ Pedido atualizado!', style: GoogleFonts.montserrat()),
-          backgroundColor: const Color(0xFF3C6246),
-        ),
+        SnackBar(content: Text('✅ Pedido atualizado!', style: GoogleFonts.montserrat()), backgroundColor: const Color(0xFF3C6246)),
       );
     }
   }

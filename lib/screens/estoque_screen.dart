@@ -37,6 +37,7 @@ class _EstoqueScreenState extends State<EstoqueScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF9EFE1),
       body: SafeArea(
         child: StreamBuilder<List<LinhaModel>>(
           stream: FirestoreService.streamEstoque(),
@@ -63,8 +64,11 @@ class _EstoqueScreenState extends State<EstoqueScreen> {
                               padding:
                                   const EdgeInsets.fromLTRB(16, 0, 16, 100),
                               itemCount: filtradas.length,
-                              itemBuilder: (_, i) =>
-                                  _cardLinha(filtradas[i]),
+                              itemBuilder: (_, i) => GestureDetector(
+                                // Ao clicar em qualquer lugar do card, abre a modal de edição preenchida
+                                onTap: () => _modalCadastrarOuEditarLinha(filtradas[i]),
+                                child: _cardLinha(filtradas[i]),
+                              ),
                             ),
                 ),
               ],
@@ -74,7 +78,7 @@ class _EstoqueScreenState extends State<EstoqueScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFFF39AA5),
-        onPressed: _modalNovaLinha,
+        onPressed: () => _modalCadastrarOuEditarLinha(), // Abre vazia para cadastro
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -94,33 +98,30 @@ class _EstoqueScreenState extends State<EstoqueScreen> {
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF3C6246))),
-                if (totalComprar > 0)
-                  Text('$totalComprar linha(s) para comprar',
-                      style: GoogleFonts.montserrat(
-                          fontSize: 12, color: Colors.red)),
               ],
             ),
           ),
           if (totalComprar > 0)
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.shopping_cart_outlined,
-                      size: 14, color: Colors.red),
-                  const SizedBox(width: 4),
-                  Text('Lista de Compras',
-                      style: GoogleFonts.montserrat(
-                          fontSize: 11,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600)),
-                ],
+            GestureDetector(
+              onTap: () {
+                // Se quiser abrir a modal ao clicar, chame sua função aqui:
+                // _abrirModalListaDeCompras();
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  '$totalComprar ${totalComprar == 1 ? "linha" : "linhas"} para comprar',
+                  style: GoogleFonts.montserrat(
+                      fontSize: 11,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600),
+                ),
               ),
             ),
         ],
@@ -133,6 +134,7 @@ class _EstoqueScreenState extends State<EstoqueScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         onChanged: (v) => setState(() => _busca = v),
+        style: GoogleFonts.montserrat(fontSize: 13),
         decoration: InputDecoration(
           hintText: 'Buscar por número ou cor...',
           hintStyle: GoogleFonts.montserrat(fontSize: 13),
@@ -257,15 +259,21 @@ class _EstoqueScreenState extends State<EstoqueScreen> {
               ),
             ],
           ),
-          PopupMenuButton(
+        PopupMenuButton<String>(
             icon: Icon(Icons.more_vert,
                 color: Colors.grey.shade400, size: 20),
+            // CORREÇÃO AQUI: Adicionada a opção de Editar no menu
             itemBuilder: (_) => [
               const PopupMenuItem(
-                  value: 'excluir', child: Text('🗑️ Excluir')),
+                  value: 'editar', child: Text('Editar')),
+              const PopupMenuItem(
+                  value: 'excluir', child: Text('Excluir')),
             ],
+          
             onSelected: (v) async {
-              if (v == 'excluir') {
+              if (v == 'editar') {
+                _modalCadastrarOuEditarLinha(linha); // Abre a modal de edição
+              } else if (v == 'excluir') {
                 await FirestoreService.excluirLinha(linha.id);
               }
             },
@@ -291,99 +299,99 @@ class _EstoqueScreenState extends State<EstoqueScreen> {
     );
   }
 
-  void _modalNovaLinha() {
-    final marcaCtrl = TextEditingController();
-    final codigoCtrl = TextEditingController();
-    final nomeCtrl = TextEditingController();
-    final qtdCtrl = TextEditingController(text: '1.0');
+  // MODIFICAÇÃO E CORREÇÃO: Todos os campos agora usam o '_campoTextoModal' correto para renderizar os dados na edição
+  void _modalCadastrarOuEditarLinha([LinhaModel? linhaExistente]) {
+    final bool isEdicao = linhaExistente != null;
 
-    showModalBottomSheet(
+    final marcaCtrl = TextEditingController(text: linhaExistente?.marca ?? '');
+    final codigoCtrl = TextEditingController(text: linhaExistente?.codigo ?? '');
+    final nomeCtrl = TextEditingController(text: linhaExistente?.nomeCor ?? '');
+    final qtdCtrl = TextEditingController(
+      text: isEdicao ? linhaExistente.quantidade.toString() : '1.0',
+    );
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFFF9EFE1),
-      shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-            left: 24,
-            right: 24,
-            top: 24),
-        child: Column(
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFF9EFE1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          isEdicao ? 'Editar Meada' : 'Nova Linha',
+          style: GoogleFonts.montserrat(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF3C6246)),
+        ),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Nova Linha',
-                style: GoogleFonts.montserrat(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF3C6246))),
-            const SizedBox(height: 16),
-            _campoTexto('Marca (ex: DMC, Anchor)', marcaCtrl),
+            _campoTextoModal('Marca', marcaCtrl),
             const SizedBox(height: 10),
-            _campoTexto('Código (ex: 310) — opcional', codigoCtrl),
+            _campoTextoModal('Código — opcional', codigoCtrl),
             const SizedBox(height: 10),
-            _campoTexto('Nome da Cor (ex: Preto)', nomeCtrl),
+            _campoTextoModal('Nome da Cor', nomeCtrl),
             const SizedBox(height: 10),
-            _campoTexto('Quantidade (ex: 1.0)', qtdCtrl,
-                teclado: TextInputType.number),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF39AA5),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () async {
-                  if (nomeCtrl.text.isEmpty) return;
-                  final qtd = double.tryParse(qtdCtrl.text) ?? 1.0;
-                  String status;
-                  if (qtd <= 0) {
-                    status = 'COMPRAR';
-                  } else if (qtd <= 0.3) {
-                    status = 'ACABANDO';
-                  } else {
-                    status = 'DISPONIVEL';
-                  }
-                  final novaLinha = LinhaModel(
-                    id: const Uuid().v4(),
-                    marca: marcaCtrl.text.isEmpty
-                        ? 'Sem Marca'
-                        : marcaCtrl.text,
-                    codigo: codigoCtrl.text.isEmpty
-                        ? null
-                        : codigoCtrl.text,
-                    nomeCor: nomeCtrl.text,
-                    quantidade: qtd,
-                    statusEstoque: status,
-                  );
-                  await FirestoreService.salvarLinha(novaLinha);
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: Text('💾 Salvar no Estoque',
-                    style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
-              ),
-            ),
+            _campoTextoModal('Quantidade', qtdCtrl, teclado: const TextInputType.numberWithOptions(decimal: true)),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar',
+                style: GoogleFonts.montserrat(
+                    color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF39AA5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              if (nomeCtrl.text.isEmpty) return;
+              
+              final qtdText = qtdCtrl.text.replaceAll(',', '.');
+              final qtd = double.tryParse(qtdText) ?? 1.0;
+              
+              String status;
+              if (qtd <= 0) {
+                status = 'COMPRAR';
+              } else if (qtd <= 0.3) {
+                status = 'ACABANDO';
+              } else {
+                status = 'DISPONIVEL';
+              }
+
+              final linhaMapeada = LinhaModel(
+                id: linhaExistente?.id ?? const Uuid().v4(),
+                marca: marcaCtrl.text.isEmpty ? 'Sem Marca' : marcaCtrl.text,
+                codigo: codigoCtrl.text.isEmpty ? null : codigoCtrl.text,
+                nomeCor: nomeCtrl.text,
+                quantidade: qtd,
+                statusEstoque: status,
+              );
+
+              await FirestoreService.salvarLinha(linhaMapeada);
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Text(isEdicao ? 'Atualizar' : 'Salvar',
+                style: GoogleFonts.montserrat(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _campoTexto(String hint, TextEditingController ctrl,
+  Widget _campoTextoModal(String hint, TextEditingController ctrl,
       {TextInputType teclado = TextInputType.text}) {
     return TextField(
       controller: ctrl,
       keyboardType: teclado,
+      style: GoogleFonts.montserrat(fontSize: 13),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.montserrat(fontSize: 13),
+        hintStyle: GoogleFonts.montserrat(fontSize: 13, color: Colors.grey),
         filled: true,
         fillColor: Colors.white,
         contentPadding:

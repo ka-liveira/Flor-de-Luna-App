@@ -25,68 +25,64 @@ class FirestoreService {
 
   // ─── CLIENTES ───────────────────────────────────────────────────
 
-  // Busca em tempo real (Stream)
   static Stream<List<ClienteModel>> streamClientes() {
     return _db.collection('clientes').snapshots().map((snap) =>
         snap.docs.map((doc) => ClienteModel(
               id: doc.id,
-              nome: doc['nome'],
-              whatsapp: doc['whatsapp'],
+              nome: doc['nome'] ?? '',
+              whatsapp: doc['observacao'] ?? '', // Mantido apenas para compatibilidade local do objeto
             )).toList());
   }
 
-  // NOVA: Busca única para carregar seletores/dropdowns (Future)
   static Future<List<ClienteModel>> buscarClientes() async {
     final snap = await _db.collection('clientes').get();
     return snap.docs.map((doc) => ClienteModel(
           id: doc.id,
           nome: doc['nome'] ?? '',
-          whatsapp: doc['whatsapp'] ?? '',
+          whatsapp: doc['observacao'] ?? '', 
         )).toList();
   }
 
   static Future<void> salvarCliente(ClienteModel cliente) async {
     await _db.collection('clientes').doc(cliente.id).set({
       'nome': cliente.nome,
-      'whatsapp': cliente.whatsapp,
+      'observacao': cliente.whatsapp, 
       'dataCadastro': FieldValue.serverTimestamp(),
     });
   }
 
   // ─── ESTOQUE ────────────────────────────────────────────────────
 
-  // Busca em tempo real (Stream)
   static Stream<List<LinhaModel>> streamEstoque() {
     return _db.collection('estoque_linhas').snapshots().map((snap) =>
         snap.docs.map((doc) => LinhaModel(
               id: doc.id,
-              marca: doc['marca'],
+              marca: doc['marca'] ?? 'Sem Marca',
               codigo: doc['codigo'],
-              nomeCor: doc['nomeCor'],
-              quantidade: (doc['quantidade'] as num).toDouble(),
-              statusEstoque: doc['statusEstoque'],
+              nomeCor: doc['nomeCor'] ?? '',
+              quantidade: (doc['quantidade'] as num? ?? 0).toDouble(),
+              statusEstoque: doc['statusEstoque'] ?? 'DISPONIVEL',
             )).toList());
   }
 
-  // NOVA: Busca única para abrir modais de seleção (Future)
   static Future<List<LinhaModel>> buscarEstoque() async {
     final snap = await _db.collection('estoque_linhas').get();
     return snap.docs.map((doc) => LinhaModel(
           id: doc.id,
-          marca: doc['marca'] ?? '',
+          marca: doc['marca'] ?? 'Sem Marca',
           codigo: doc['codigo'] ?? '',
           nomeCor: doc['nomeCor'] ?? '',
           quantidade: (doc['quantidade'] as num? ?? 0).toDouble(),
-          statusEstoque: doc['statusEstoque'] ?? '',
+          statusEstoque: doc['statusEstoque'] ?? 'DISPONIVEL',
         )).toList();
   }
 
   static Future<void> salvarLinha(LinhaModel linha) async {
     await _db.collection('estoque_linhas').doc(linha.id).set({
-      'marca': linha.marca,
+      'marca': linha.marca.isEmpty ? 'Sem Marca' : linha.marca,
       'codigo': linha.codigo,
       'nomeCor': linha.nomeCor,
-      'quantidade': linha.quantidade,
+      'quantidade': linha.quantidade, 
       'statusEstoque': linha.statusEstoque,
     });
   }
@@ -95,18 +91,18 @@ class FirestoreService {
     await _db.collection('estoque_linhas').doc(id).delete();
   }
 
-  // ─── CONVERSORES ────────────────────────────────────────────────
+  // ─── CONVERSORES (Mapeamento focado no design atual) ─────────────
 
   static Map<String, dynamic> _pedidoToMap(PedidoModel p) {
     return {
       'clienteId': p.cliente.id,
       'clienteNome': p.cliente.nome,
-      'clienteWhatsapp': p.cliente.whatsapp,
+      'clienteWhatsapp': p.cliente.whatsapp, 
       'dataPedido': Timestamp.fromDate(p.dataPedido),
       'dataEntrega': Timestamp.fromDate(p.dataEntrega),
       'tema': p.tema,
       'textoBordar': p.textoBordar,
-      'tecido': p.tecido,
+      'tecido': '', // AJUSTE: Removido do formulário, salvando sempre vazio para manter o modelo limpo
       'larguraPontos': p.larguraPontos,
       'alturaPontos': p.alturaPontos,
       'linhas': p.linhas.map((l) => {
@@ -128,26 +124,27 @@ class FirestoreService {
     return PedidoModel(
       id: doc.id,
       cliente: ClienteModel(
-        id: data['clienteId'],
-        nome: data['clienteNome'],
-        whatsapp: data['clienteWhatsapp'],
+        id: data['clienteId'] ?? '',
+        nome: data['clienteNome'] ?? 'Cliente sem nome',
+        whatsapp: data['clienteWhatsapp'] ?? '',
       ),
-      dataPedido: (data['dataPedido'] as Timestamp).toDate(),
-      dataEntrega: (data['dataEntrega'] as Timestamp).toDate(),
-      tema: data['tema'],
-      textoBordar: data['textoBordar'],
-      tecido: data['tecido'],
-      larguraPontos: data['larguraPontos'],
-      alturaPontos: data['alturaPontos'],
-      linhas: (data['linhas'] as List).map((l) => LinhaResumida(
-            marca: l['marca'],
-            codigo: l['codigo'],
-            nomeCor: l['nomeCor'],
+      dataPedido: (data['dataPedido'] as Timestamp? ?? Timestamp.now()).toDate(),
+      dataEntrega: (data['dataEntrega'] as Timestamp? ?? Timestamp.now()).toDate(),
+      // PROTEÇÃO CONTRA NULOS: Adicionado os operadores de fallback (??) para blindar o app contra campos vazios antigos no Firestore
+      tema: data['tema'] ?? 'Sem tema',
+      textoBordar: data['textoBordar'] ?? '',
+      tecido: '', // AJUSTE: Ignora o campo antigo do banco e assume a string vazia exigida pelas novas telas
+      larguraPontos: data['larguraPontos'] ?? 0,
+      alturaPontos: data['alturaPontos'] ?? 0,
+      linhas: (data['linhas'] as List? ?? []).map((l) => LinhaResumida(
+            marca: l['marca'] ?? 'Sem Marca',
+            codigo: l['codigo'] ?? '',
+            nomeCor: l['nomeCor'] ?? '',
           )).toList(),
-      valorCobrado: (data['valorCobrado'] as num).toDouble(),
-      valorPago: (data['valorPago'] as num).toDouble(),
-      statusProducao: data['statusProducao'],
-      statusPagamento: data['statusPagamento'],
+      valorCobrado: (data['valorCobrado'] as num? ?? 0.0).toDouble(),
+      valorPago: (data['valorPago'] as num? ?? 0.0).toDouble(),
+      statusProducao: data['statusProducao'] ?? 'NA_FILA',
+      statusPagamento: data['statusPagamento'] ?? 'PENDENTE',
       observacoes: data['observacoes'] ?? '',
       urlImagem: data['urlImagem'],
     );
