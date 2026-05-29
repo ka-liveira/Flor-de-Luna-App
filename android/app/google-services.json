@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "57377143772",
+    "project_id": "flordeluna-app-15942",
+    "storage_bucket": "flordeluna-app-15942.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:57377143772:android:b073fa1448f635fb3ead19",
+        "android_client_info": {
+          "package_name": "com.example.flordeluna_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2I6vV2lM982wa674JboVVAIDx1Y-cHsU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
