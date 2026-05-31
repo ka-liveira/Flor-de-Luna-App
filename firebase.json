@@ -1,1 +1,36 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"flordeluna-app-15942","appId":"1:57377143772:android:b073fa1448f635fb3ead19","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"flordeluna-app-15942","configurations":{"android":"1:57377143772:android:b073fa1448f635fb3ead19","web":"1:57377143772:web:65c78427b9a0b8093ead19"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "flordeluna-app-15942",
+          "appId": "1:57377143772:android:b073fa1448f635fb3ead19",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "flordeluna-app-15942",
+          "configurations": {
+            "android": "1:57377143772:android:b073fa1448f635fb3ead19",
+            "web": "1:57377143772:web:65c78427b9a0b8093ead19"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
