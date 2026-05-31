@@ -1,3 +1,4 @@
+// screens/financeiro_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -25,40 +26,30 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
       case 'editar':
         await Navigator.push(
           context,
-          MaterialPageRoute(
-              builder: (_) => CadastroPedidoScreen(pedido: pedido)),
+          MaterialPageRoute(builder: (_) => CadastroPedidoScreen(pedido: pedido)),
         );
         break;
     }
   }
 
   void _confirmarQuitacao(PedidoModel pedido) {
-    final valorRestante = pedido.valorCobrado - pedido.valorPago;
-
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFFF9EFE1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Dar Baixa no Pedido',
-            style: GoogleFonts.montserrat(
-                fontWeight: FontWeight.bold, color: const Color(0xFF1C2321))),
+        title: Text('Dar Baixa no Pedido', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, color: const Color(0xFF1C2321))),
         content: Text(
-          'Confirmar que ${pedido.cliente.nome} pagou o valor restante de R\$ ${valorRestante.toStringAsFixed(2)}?',
+          'Confirmar que ${pedido.cliente.nome} pagou o valor restante de R\$ ${pedido.valorRestante.toStringAsFixed(2)}?',
           style: GoogleFonts.montserrat(fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar',
-                style: GoogleFonts.montserrat(color: const Color(0xFF3C6246))),
+            child: Text('Cancelar', style: GoogleFonts.montserrat(color: const Color(0xFF3C6246))),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3C6246),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3C6246), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
               final pedidoQuitado = PedidoModel(
                 id: pedido.id,
@@ -67,7 +58,7 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                 dataEntrega: pedido.dataEntrega,
                 tema: pedido.tema,
                 textoBordar: pedido.textoBordar,
-                tecido: pedido.tecido,
+                tejido: pedido.tejido,
                 larguraPontos: pedido.larguraPontos,
                 alturaPontos: pedido.alturaPontos,
                 linhas: pedido.linhas,
@@ -76,25 +67,17 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                 statusProducao: pedido.statusProducao,
                 statusPagamento: 'QUITADO',
                 observacoes: pedido.observacoes,
-                urlImagem: pedido.urlImagem,
+                tipoPedido: pedido.tipoPedido,
               );
 
               await FirestoreService.salvarPedido(pedidoQuitado);
-
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Pedido quitado com sucesso!',
-                        style: GoogleFonts.montserrat()),
-                    backgroundColor: const Color(0xFF3C6246),
-                  ),
-                );
-              }
+              if (!mounted) return;
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Pedido quitado com sucesso!'), backgroundColor: const Color(0xFF3C6246)),
+              );
             },
-            child: Text('Confirmar',
-                style: GoogleFonts.montserrat(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Confirmar', style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -103,32 +86,20 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
 
   void _modalPagamentoParcial(PedidoModel pedido) {
     final valorCtrl = TextEditingController();
-    final valorRestante = pedido.valorCobrado - pedido.valorPago;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFFF9EFE1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Registrar Pagamento',
-            style: GoogleFonts.montserrat(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF3C6246))),
+        title: Text('Registrar Pagamento', style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF3C6246))),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${pedido.cliente.nome} · ${pedido.tema}',
-                style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
+            Text(pedido.cliente.nome, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1C2321))),
             const SizedBox(height: 6),
-            Text(
-              'Saldo devedor: R\$ ${valorRestante.toStringAsFixed(2)}',
-              style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700),
-            ),
+            Text('Saldo devedor: R\$ ${pedido.valorRestante.toStringAsFixed(2)}', style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.red.shade700)),
             const SizedBox(height: 16),
             TextField(
               controller: valorCtrl,
@@ -137,39 +108,29 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
               style: GoogleFonts.montserrat(fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Valor recebido (R\$)',
-                hintStyle: GoogleFonts.montserrat(fontSize: 13),
-                prefixIcon: const Icon(Icons.attach_money,
-                    color: Color(0xFF3C6246)),
+                prefixIcon: const Icon(Icons.attach_money, color: Color(0xFF3C6246)),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar',
-                style: GoogleFonts.montserrat(
-                    color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
+            onPressed: () {
+              valorCtrl.dispose();
+              Navigator.pop(context);
+            },
+            child: Text('Cancelar', style: GoogleFonts.montserrat(color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF39AA5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF39AA5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
-              final valorRecebidoText = valorCtrl.text.replaceAll(',', '.');
-              final valorRecebido = double.tryParse(valorRecebidoText) ?? 0;
+              final valorRecebido = double.tryParse(valorCtrl.text.replaceAll(',', '.')) ?? 0.0;
               final novoTotal = pedido.valorPago + valorRecebido;
-              final novoStatus = novoTotal >= pedido.valorCobrado
-                  ? 'QUITADO'
-                  : 'PAGO_PARCIAL';
+              final novoStatus = novoTotal >= pedido.valorCobrado ? 'QUITADO' : 'PAGO_PARCIAL';
 
               final pedidoAtualizado = PedidoModel(
                 id: pedido.id,
@@ -178,7 +139,7 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                 dataEntrega: pedido.dataEntrega,
                 tema: pedido.tema,
                 textoBordar: pedido.textoBordar,
-                tecido: pedido.tecido,
+                tejido: pedido.tejido,
                 larguraPontos: pedido.larguraPontos,
                 alturaPontos: pedido.alturaPontos,
                 linhas: pedido.linhas,
@@ -187,29 +148,18 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                 statusProducao: pedido.statusProducao,
                 statusPagamento: novoStatus,
                 observacoes: pedido.observacoes,
-                urlImagem: pedido.urlImagem,
+                tipoPedido: pedido.tipoPedido,
               );
 
               await FirestoreService.salvarPedido(pedidoAtualizado);
-
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      novoStatus == 'QUITADO'
-                          ? 'Pedido quitado!'
-                          : 'Pagamento registrado!',
-                      style: GoogleFonts.montserrat(),
-                    ),
-                    backgroundColor: const Color(0xFF3C6246),
-                  ),
-                );
-              }
+              valorCtrl.dispose();
+              if (!mounted) return;
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(novoStatus == 'QUITADO' ? 'Pedido quitado!' : 'Pagamento registrado!'), backgroundColor: const Color(0xFF3C6246)),
+              );
             },
-            child: Text('Confirmar',
-                style: GoogleFonts.montserrat(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Confirmar', style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -236,10 +186,9 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
         }
 
         final pedidosReal = snapshot.data ?? [];
-
         final double faturamentoBruto = pedidosReal.fold(0, (s, p) => s + p.valorCobrado);
         final double totalRecebido = pedidosReal.fold(0, (s, p) => s + p.valorPago);
-        final double aReceber = pedidosReal.fold(0, (s, p) => s + (p.valorCobrado - p.valorPago));
+        final double aReceber = pedidosReal.fold(0, (s, p) => s + p.valorRestante);
 
         final List<PedidoModel> devedores = pedidosReal
             .where((p) => p.statusPagamento != 'QUITADO')
@@ -276,24 +225,14 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3C6246), Color(0xFF5A8A68)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: const LinearGradient(colors: [Color(0xFF3C6246), Color(0xFF5A8A68)], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Financeiro',
-              style: GoogleFonts.montserrat(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold)),
-          Text(DateFormat("MMMM 'de' yyyy", 'pt_BR').format(DateTime.now()),
-              style: GoogleFonts.montserrat(
-                  color: Colors.white70, fontSize: 13)),
+          Text('Financeiro', style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(DateFormat("MMMM 'de' yyyy", 'pt_BR').format(DateTime.now()), style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 13)),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -306,25 +245,12 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: const Color(0xFFF4C47C).withOpacity(0.6)),
-            ),
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFF4C47C).withOpacity(0.6))),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('A Receber',
-                    style: GoogleFonts.montserrat(
-                        color: Colors.white70, fontSize: 13)),
-                Text(
-                  'R\$ ${pendente.toStringAsFixed(2)}',
-                  style: GoogleFonts.montserrat(
-                      color: const Color(0xFFF4C47C),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
-                ),
+                Text('A Receber', style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 13)),
+                Text('R\$ ${pendente.toStringAsFixed(2)}', style: GoogleFonts.montserrat(color: const Color(0xFFF4C47C), fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -337,23 +263,13 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cor.withOpacity(0.5)),
-        ),
+        decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12), border: Border.all(color: cor.withOpacity(0.5))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(titulo,
-                style: GoogleFonts.montserrat(
-                    color: Colors.white70, fontSize: 11)),
+            Text(titulo, style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 11)),
             const SizedBox(height: 6),
-            Text('R\$ ${valor.toStringAsFixed(2)}',
-                style: GoogleFonts.montserrat(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold)),
+            Text('R\$ ${valor.toStringAsFixed(2)}', style: GoogleFonts.montserrat(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -362,42 +278,27 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
 
   Widget _graficoMesesDinamico(List<PedidoModel> pedidos) {
     final Map<String, double> valoresPorMes = {};
+    final mesAtualStr = DateFormat('MMM', 'pt_BR').format(DateTime.now());
     
     for (var p in pedidos) {
       final stringMes = DateFormat('MMM', 'pt_BR').format(p.dataPedido);
       valoresPorMes[stringMes] = (valoresPorMes[stringMes] ?? 0.0) + p.valorPago;
     }
 
-    final mesAtualStr = DateFormat('MMM', 'pt_BR').format(DateTime.now());
     if (valoresPorMes.isEmpty) {
       valoresPorMes[mesAtualStr] = 0.0;
     }
 
     final listaMesesOrdenada = valoresPorMes.entries.toList();
-    final double maximo = valoresPorMes.values.isNotEmpty 
-        ? valoresPorMes.values.reduce((a, b) => a > b ? a : b) 
-        : 1.0;
+    final double maximo = valoresPorMes.values.isNotEmpty ? valoresPorMes.values.reduce((a, b) => a > b ? a : b) : 1.0;
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFDF9),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
-        ],
-      ),
+      decoration: BoxDecoration(color: const Color(0xFFFFFDF9), borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Evolução Mensal (Dados Reais)',
-              style: GoogleFonts.montserrat(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: const Color(0xFF3C6246))),
+          Text('Evolução Mensal (Dados Reais)', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 14, color: const Color(0xFF3C6246))),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -405,34 +306,24 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
             children: listaMesesOrdenada.map((entry) {
               final nomeMes = entry.key;
               final valorMes = entry.value;
-              
               final altura = maximo > 0 ? (valorMes / maximo) * 120 : 0.0;
               final bool isMesAtual = nomeMes.toLowerCase() == mesAtualStr.toLowerCase();
 
               return Column(
                 children: [
-                  Text('R\$ ${valorMes.toStringAsFixed(0)}',
-                      style: GoogleFonts.montserrat(
-                          fontSize: 10,
-                          color: isMesAtual ? const Color(0xFF3C6246) : Colors.grey)),
+                  Text('R\$ ${valorMes.toStringAsFixed(0)}', style: GoogleFonts.montserrat(fontSize: 10, color: isMesAtual ? const Color(0xFF3C6246) : Colors.grey)),
                   const SizedBox(height: 4),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 600),
                     width: 48,
                     height: altura < 5 ? 5 : altura, 
                     decoration: BoxDecoration(
-                      color: isMesAtual
-                          ? const Color.fromARGB(255, 248, 193, 239)
-                          : const Color.fromARGB(255, 178, 249, 197).withOpacity(0.5),
+                      color: isMesAtual ? const Color.fromARGB(255, 248, 193, 239) : const Color.fromARGB(255, 178, 249, 197).withOpacity(0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(nomeMes,
-                      style: GoogleFonts.montserrat(
-                          fontSize: 12,
-                          fontWeight: isMesAtual ? FontWeight.bold : FontWeight.normal,
-                          color: isMesAtual ? const Color(0xFF3C6246) : Colors.grey)),
+                  Text(nomeMes, style: GoogleFonts.montserrat(fontSize: 12, fontWeight: isMesAtual ? FontWeight.bold : FontWeight.normal, color: isMesAtual ? const Color(0xFF3C6246) : Colors.grey)),
                 ],
               );
             }).toList(),
@@ -443,30 +334,16 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
   }
 
   Widget _tituloSecao(String titulo) {
-    return Text(titulo,
-        style: GoogleFonts.montserrat(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: const Color(0xFF1C2321)));
+    return Text(titulo, style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1C2321)));
   }
 
   Widget _cardDevedor(PedidoModel pedido) {
     final formatData = DateFormat('dd/MMM', 'pt_BR');
-    final valorRestante = pedido.valorCobrado - pedido.valorPago;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFDF9),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2))
-        ],
-      ),
+      decoration: BoxDecoration(color: const Color(0xFFFFFDF9), borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 2))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -475,24 +352,14 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
               const Text('👤', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  '${pedido.cliente.nome} · ${pedido.tema}',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: const Color(0xFF1C2321),
-                  ),
-                ),
+                child: Text(pedido.cliente.nome, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF1C2321))),
               ),
               PopupMenuButton(
                 icon: const Icon(Icons.more_vert, color: Color(0xFF3C6246)),
                 itemBuilder: (_) => [
-                  const PopupMenuItem(
-                      value: 'quitar', child: Text('Dar Baixa / Quitar')),
-                  const PopupMenuItem(
-                      value: 'parcial', child: Text('Registrar Pagamento Parcial')),
-                  const PopupMenuItem(
-                      value: 'editar', child: Text('Editar Pedido')),
+                  const PopupMenuItem(value: 'quitar', child: Text('Dar Baixa / Quitar')),
+                  const PopupMenuItem(value: 'parcial', child: Text('Registrar Pagamento Parcial')),
+                  const PopupMenuItem(value: 'editar', child: Text('Editar Pedido')),
                 ],
                 onSelected: (v) => _acaoMenu(v.toString(), pedido),
               ),
@@ -501,39 +368,22 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              // CORREÇÃO: Adicionada a vírgula que faltava bem aqui
               Icon(Icons.calendar_today_outlined, size: 13, color: Colors.grey.shade500),
               const SizedBox(width: 4),
-              Text('Entrega: ${formatData.format(pedido.dataEntrega)}',
-                  style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
+              Text('Entrega: ${formatData.format(pedido.dataEntrega)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
               const Spacer(),
-              Text(
-                'Total: R\$ ${pedido.pedidoValorCobradoFormatado(pedido.valorCobrado)}',
-                style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey),
-              ),
+              Text('Total: R\$ ${pedido.valorCobrado.toStringAsFixed(2)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Text(
-                  'Já pago: R\$ ${pedido.valorPago.toStringAsFixed(2)}',
-                  style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
+              Text('Já pago: R\$ ${pedido.valorPago.toStringAsFixed(2)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Text(
-                  'Falta: R\$ ${valorRestante.toStringAsFixed(2)}',
-                  style: GoogleFonts.montserrat(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red.shade700),
-                ),
+                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.shade200)),
+                child: Text('Falta: R\$ ${pedido.valorRestante.toStringAsFixed(2)}', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red.shade700)),
               ),
             ],
           ),
@@ -546,19 +396,8 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Text('Tudo quitado! Nenhum valor pendente.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(fontSize: 14, color: Colors.grey)),
-          ],
-        ),
+        child: Text('Tudo quitado! Nenhum valor pendente.', style: GoogleFonts.montserrat(fontSize: 14, color: Colors.grey)),
       ),
     );
   }
-}
-
-extension PedidoModelFormat on PedidoModel {
-  String pedidoValorCobradoFormatado(double valor) => valor.toStringAsFixed(2);
 }

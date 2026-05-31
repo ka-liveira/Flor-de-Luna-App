@@ -1,6 +1,9 @@
+// services/firestore_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/pedido_model.dart';
 import '../models/linha_model.dart';
+import '../models/cliente_model.dart';
+import '../models/linha_resumida.dart';
 
 class FirestoreService {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -30,7 +33,7 @@ class FirestoreService {
         snap.docs.map((doc) => ClienteModel(
               id: doc.id,
               nome: doc['nome'] ?? '',
-              whatsapp: doc['observacao'] ?? '', // Mantido apenas para compatibilidade local do objeto
+              whatsapp: doc['observacao'] ?? '',
             )).toList());
   }
 
@@ -39,14 +42,14 @@ class FirestoreService {
     return snap.docs.map((doc) => ClienteModel(
           id: doc.id,
           nome: doc['nome'] ?? '',
-          whatsapp: doc['observacao'] ?? '', 
+          whatsapp: doc['observacao'] ?? '',
         )).toList();
   }
 
   static Future<void> salvarCliente(ClienteModel cliente) async {
     await _db.collection('clientes').doc(cliente.id).set({
       'nome': cliente.nome,
-      'observacao': cliente.whatsapp, 
+      'observacao': cliente.whatsapp,
       'dataCadastro': FieldValue.serverTimestamp(),
     });
   }
@@ -82,7 +85,7 @@ class FirestoreService {
       'marca': linha.marca.isEmpty ? 'Sem Marca' : linha.marca,
       'codigo': linha.codigo,
       'nomeCor': linha.nomeCor,
-      'quantidade': linha.quantidade, 
+      'quantidade': linha.quantidade,
       'statusEstoque': linha.statusEstoque,
     });
   }
@@ -91,18 +94,18 @@ class FirestoreService {
     await _db.collection('estoque_linhas').doc(id).delete();
   }
 
-  // ─── CONVERSORES (Mapeamento focado no design atual) ─────────────
+  // ─── CONVERSORES ─────────────────────────────────────────────────
 
   static Map<String, dynamic> _pedidoToMap(PedidoModel p) {
     return {
       'clienteId': p.cliente.id,
       'clienteNome': p.cliente.nome,
-      'clienteWhatsapp': p.cliente.whatsapp, 
+      'clienteWhatsapp': p.cliente.whatsapp,
       'dataPedido': Timestamp.fromDate(p.dataPedido),
       'dataEntrega': Timestamp.fromDate(p.dataEntrega),
       'tema': p.tema,
       'textoBordar': p.textoBordar,
-      'tecido': '', // AJUSTE: Removido do formulário, salvando sempre vazio para manter o modelo limpo
+      'tecido': p.tejido,
       'larguraPontos': p.larguraPontos,
       'alturaPontos': p.alturaPontos,
       'linhas': p.linhas.map((l) => {
@@ -115,7 +118,7 @@ class FirestoreService {
       'statusProducao': p.statusProducao,
       'statusPagamento': p.statusPagamento,
       'observacoes': p.observacoes,
-      'urlImagem': p.urlImagem,
+      'tipoPedido': p.tipoPedido,
     };
   }
 
@@ -130,10 +133,9 @@ class FirestoreService {
       ),
       dataPedido: (data['dataPedido'] as Timestamp? ?? Timestamp.now()).toDate(),
       dataEntrega: (data['dataEntrega'] as Timestamp? ?? Timestamp.now()).toDate(),
-      // PROTEÇÃO CONTRA NULOS: Adicionado os operadores de fallback (??) para blindar o app contra campos vazios antigos no Firestore
       tema: data['tema'] ?? 'Sem tema',
       textoBordar: data['textoBordar'] ?? '',
-      tecido: '', // AJUSTE: Ignora o campo antigo do banco e assume a string vazia exigida pelas novas telas
+      tejido: data['tecido'] ?? '',
       larguraPontos: data['larguraPontos'] ?? 0,
       alturaPontos: data['alturaPontos'] ?? 0,
       linhas: (data['linhas'] as List? ?? []).map((l) => LinhaResumida(
@@ -146,7 +148,7 @@ class FirestoreService {
       statusProducao: data['statusProducao'] ?? 'NA_FILA',
       statusPagamento: data['statusPagamento'] ?? 'PENDENTE',
       observacoes: data['observacoes'] ?? '',
-      urlImagem: data['urlImagem'],
+      tipoPedido: data['tipoPedido'] ?? 'BORDADO',
     );
   }
 }

@@ -1,14 +1,6 @@
-class ClienteModel {
-  final String id;
-  final String nome;
-  final String whatsapp;
-
-  ClienteModel({
-    required this.id,
-    required this.nome,
-    required this.whatsapp,
-  });
-}
+// models/pedido_model.dart
+import 'cliente_model.dart';
+import 'linha_resumida.dart';
 
 class PedidoModel {
   final String id;
@@ -17,7 +9,7 @@ class PedidoModel {
   final DateTime dataEntrega;
   final String tema;
   final String textoBordar;
-  final String tecido;
+  final String tejido;
   final int larguraPontos;
   final int alturaPontos;
   final List<LinhaResumida> linhas;
@@ -26,7 +18,7 @@ class PedidoModel {
   final String statusProducao; // NA_FILA, EM_PRODUCAO, CONCLUIDO, ENTREGUE
   final String statusPagamento; // PENDENTE, PAGO_PARCIAL, QUITADO
   final String observacoes;
-  final String? urlImagem;
+  final String tipoPedido; // BORDADO, ARTESANATO
 
   PedidoModel({
     required this.id,
@@ -35,7 +27,7 @@ class PedidoModel {
     required this.dataEntrega,
     required this.tema,
     required this.textoBordar,
-    required this.tecido,
+    required this.tejido,
     required this.larguraPontos,
     required this.alturaPontos,
     required this.linhas,
@@ -44,24 +36,17 @@ class PedidoModel {
     required this.statusProducao,
     required this.statusPagamento,
     required this.observacoes,
-    this.urlImagem,
+    this.tipoPedido = 'BORDADO',
   });
 
   double get valorRestante => valorCobrado - valorPago;
 
-  int get diasParaEntrega => dataEntrega.difference(DateTime.now()).inDays;
+  int get diasParaEntrega {
+    final hoje = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final entrega = DateTime(dataEntrega.year, dataEntrega.month, dataEntrega.day);
+    return entrega.difference(hoje).inDays;
+  }
 
   bool get entregaProxima => diasParaEntrega <= 5 && diasParaEntrega >= 0;
-}
-
-class LinhaResumida {
-  final String marca;
-  final String codigo;
-  final String nomeCor;
-
-  LinhaResumida({
-    required this.marca,
-    required this.codigo,
-    required this.nomeCor,
-  });
+  bool get isArtesanato => tipoPedido == 'ARTESANATO';
 }

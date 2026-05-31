@@ -17,8 +17,10 @@ class LinhaModel {
 
   String get marcaECodigo {
     if (codigo != null && codigo!.isNotEmpty) {
+
       return '$marca $codigo';
     }
     return marca;
   }
-}
+} 
+
