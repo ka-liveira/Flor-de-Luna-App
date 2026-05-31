@@ -1,6 +1,6 @@
 // models/pedido_model.dart
 import 'cliente_model.dart';
-import 'linha_resumida.dart';
+import 'linha_resumida_model.dart';
 
 class PedidoModel {
   final String id;
