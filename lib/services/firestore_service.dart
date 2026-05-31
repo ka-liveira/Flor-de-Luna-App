@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/pedido_model.dart';
 import '../models/linha_model.dart';
 import '../models/cliente_model.dart';
-import '../models/linha_resumida.dart';
+import '../models/linha_resumida_model.dart';
 
 class FirestoreService {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;

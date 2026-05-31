@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../models/linha_model.dart';
 import '../models/pedido_model.dart';
 import '../models/cliente_model.dart';
-import '../models/linha_resumida.dart';
+import '../models/linha_resumida_model.dart';
 import '../services/firestore_service.dart';
 
 class CadastroPedidoScreen extends StatefulWidget {
